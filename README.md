@@ -1,1 +1,1 @@
-# Placement Portal Application (MAD-I)
+# Placement Portal Application
