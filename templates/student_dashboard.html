@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row mt-2">
+    <h2 class="mb-4 text-secondary">Student Dashboard: <span class="text-dark">{{ current_user.student_record.candidate_name }}</span></h2>
+    
+    <div class="col-md-7">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-dark text-white">Available Placement Drives</div>
+            <div class="card-body">
+                {% for drive in drives %}
+                <div class="border p-3 mb-3 rounded shadow-sm bg-light">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="mb-0 text-primary">{{ drive.role_title }}</h5>
+                        <span class="badge bg-info text-dark">{{ drive.recruiter.org_name }}</span>
+                    </div>
+                    <p class="small text-muted mb-2"><strong>Deadline:</strong> {{ drive.last_date }}</p>
+                    <p class="mb-2">{{ drive.role_desc }}</p>
+                    <p class="small text-muted border-top pt-2"><strong>Requirements:</strong> {{ drive.requirements }}</p>
+                    
+                    {% if drive.id in applied_ids %}
+                        <button class="btn btn-sm btn-secondary w-100" disabled>Already Applied</button>
+                    {% else %}
+                        <form action="/student/apply/{{ drive.id }}" method="POST">
+                            <button type="submit" class="btn btn-sm btn-success w-100">Apply Now</button>
+                        </form>
+                    {% endif %}
+                </div>
+                {% else %}
+                <p class="text-muted">No approved placement drives are currently available.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-5">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-secondary text-white">My Application History</div>
+            <ul class="list-group list-group-flush">
+                {% for app in applications %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>{{ app.drive_details.role_title }}</strong><br>
+                        <small class="text-muted">{{ app.drive_details.recruiter.org_name }} | {{ app.applied_on.strftime('%Y-%m-%d') }}</small>
+                    </div>
+                    <span class="badge 
+                        {% if app.selection_status == 'Applied' %}bg-secondary
+                        {% elif app.selection_status == 'Shortlisted' %}bg-warning text-dark
+                        {% elif app.selection_status == 'Selected' %}bg-success
+                        {% else %}bg-danger{% endif %}">
+                        {{ app.selection_status }}
+                    </span>
+                </li>
+                {% else %}
+                <li class="list-group-item text-muted">You have not applied to any drives yet.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -137,6 +137,20 @@ def dashboard_route():
         # Fetch only the drives posted by this specific company [cite: 88, 464]
         my_drives = CampusDrive.query.filter_by(company_ref=current_user.company_record.id).all()
         return render_template('company_dashboard.html', drives=my_drives)
+    elif current_user.account_type == 'student':
+        # Constraint: View only approved placement drives
+        active_drives = CampusDrive.query.filter_by(current_status='Approved').all()
+        
+        # Fetch the student's complete application history
+        my_apps = JobApplication.query.filter_by(student_ref=current_user.student_record.id).all()
+        
+        # Create a list of drive IDs the student already applied to (to hide the Apply button)
+        applied_drive_ids = [app.drive_ref for app in my_apps]
+        
+        return render_template('student_dashboard.html', 
+                               drives=active_drives, 
+                               applications=my_apps,
+                               applied_ids=applied_drive_ids)
 
 @app.route('/admin/verify_company/<int:comp_id>', methods=['POST'])
 @login_required
@@ -223,5 +237,33 @@ def update_application(app_id):
         db.session.commit()
         flash('Applicant status updated.', 'success')
     return redirect(url_for('dashboard_route'))
+# ==========================================
+# Student Functionalities [cite: 108-116, 470-484]
+# ==========================================
+@app.route('/student/apply/<int:drive_id>', methods=['POST'])
+@login_required
+def apply_for_drive(drive_id):
+    if current_user.account_type != 'student':
+        return redirect(url_for('dashboard_route'))
+        
+    student_id = current_user.student_record.id
+    
+    # Constraint: Prevent duplicate job applications for the same posting [cite: 128, 486-488]
+    existing_app = JobApplication.query.filter_by(student_ref=student_id, drive_ref=drive_id).first()
+    if existing_app:
+        flash('You have already applied for this placement drive.', 'warning')
+        return redirect(url_for('dashboard_route'))
+        
+    new_application = JobApplication(
+        student_ref=student_id,
+        drive_ref=drive_id,
+        selection_status='Applied' # Default status [cite: 410]
+    )
+    db.session.add(new_application)
+    db.session.commit()
+    
+    flash('Successfully applied to the placement drive!', 'success')
+    return redirect(url_for('dashboard_route'))
+
 if __name__ == '__main__':
     app.run(debug=True)
