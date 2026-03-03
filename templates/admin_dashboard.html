@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row mt-2">
+    <h2 class="mb-4 text-secondary">Institute Admin Dashboard</h2>
+    
+    <div class="col-md-3">
+        <div class="card bg-primary text-white shadow-sm mb-3 text-center p-3">
+            <h6 class="text-uppercase">Total Students</h6>
+            <h2 class="display-6">{{ t_students }}</h2>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white shadow-sm mb-3 text-center p-3">
+            <h6 class="text-uppercase">Total Companies</h6>
+            <h2 class="display-6">{{ t_companies }}</h2>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white shadow-sm mb-3 text-center p-3">
+            <h6 class="text-uppercase">Placement Drives</h6>
+            <h2 class="display-6">{{ t_drives }}</h2>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark shadow-sm mb-3 text-center p-3">
+            <h6 class="text-uppercase">Applications</h6>
+            <h2 class="display-6">{{ t_apps }}</h2>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-dark text-white">Pending Company Registrations</div>
+            <ul class="list-group list-group-flush">
+                {% for comp in p_comps %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>{{ comp.org_name }}</strong><br>
+                        <small class="text-muted">{{ comp.business_sector }} | {{ comp.hr_email }}</small>
+                    </div>
+                    <form action="/admin/verify_company/{{ comp.id }}" method="POST" class="d-inline">
+                        <button type="submit" name="action_type" value="Approve" class="btn btn-sm btn-success">Approve</button>
+                        <button type="submit" name="action_type" value="Reject" class="btn btn-sm btn-danger">Reject</button>
+                    </form>
+                </li>
+                {% else %}
+                <li class="list-group-item text-muted">No pending company registrations.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-secondary text-white">Pending Placement Drives</div>
+            <ul class="list-group list-group-flush">
+                {% for drive in p_drives %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>{{ drive.role_title }}</strong> ({{ drive.recruiter.org_name }})<br>
+                        <small class="text-muted">Deadline: {{ drive.last_date }}</small>
+                    </div>
+                    <form action="/admin/verify_drive/{{ drive.id }}" method="POST" class="d-inline">
+                        <button type="submit" name="action_type" value="Approve" class="btn btn-sm btn-success">Approve</button>
+                        <button type="submit" name="action_type" value="Reject" class="btn btn-sm btn-danger">Reject</button>
+                    </form>
+                </li>
+                {% else %}
+                <li class="list-group-item text-muted">No pending placement drives.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

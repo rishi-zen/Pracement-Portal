@@ -8,6 +8,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import db, AppUser, CompanyProfile, StudentProfile
+from models import db, AppUser, CompanyProfile, StudentProfile, CampusDrive, JobApplication
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'rishi_madi_secret_key_2026'
@@ -113,13 +114,60 @@ def logout_route():
 @app.route('/dashboard')
 @login_required
 def dashboard_route():
-    # Redirects users to role-specific dashboards 
     if current_user.account_type == 'admin':
-        return render_template('admin_dashboard.html')
+        # Admin Stats 
+        t_students = StudentProfile.query.count()
+        t_companies = CompanyProfile.query.count()
+        t_drives = CampusDrive.query.count()
+        t_apps = JobApplication.query.count()
+        
+        # Pending Approvals [cite: 66, 348-354]
+        pending_comps = CompanyProfile.query.filter_by(admin_verification='Pending').all()
+        pending_drives = CampusDrive.query.filter_by(current_status='Pending').all()
+        
+        return render_template('admin_dashboard.html', 
+                               t_students=t_students, 
+                               t_companies=t_companies, 
+                               t_drives=t_drives, 
+                               t_apps=t_apps,
+                               p_comps=pending_comps, 
+                               p_drives=pending_drives)
+                               
     elif current_user.account_type == 'company':
         return render_template('company_dashboard.html')
     else:
         return render_template('student_dashboard.html')
+
+
+@app.route('/admin/verify_company/<int:comp_id>', methods=['POST'])
+@login_required
+def verify_company(comp_id):
+    if current_user.account_type != 'admin':
+        return redirect(url_for('dashboard_route'))
+    
+    action = request.form.get('action_type') # 'Approve' or 'Reject'
+    company = CompanyProfile.query.get_or_404(comp_id)
+    
+    company.admin_verification = 'Approved' if action == 'Approve' else 'Rejected'
+    db.session.commit()
+    
+    flash(f"Company {company.org_name} has been {company.admin_verification}.", 'success')
+    return redirect(url_for('dashboard_route'))
+
+@app.route('/admin/verify_drive/<int:drive_id>', methods=['POST'])
+@login_required
+def verify_drive(drive_id):
+    if current_user.account_type != 'admin':
+        return redirect(url_for('dashboard_route'))
+        
+    action = request.form.get('action_type')
+    drive = CampusDrive.query.get_or_404(drive_id)
+    
+    drive.current_status = 'Approved' if action == 'Approve' else 'Rejected'
+    db.session.commit()
+    
+    flash(f"Placement Drive '{drive.role_title}' has been {drive.current_status}.", 'success')
+    return redirect(url_for('dashboard_route'))
 
 if __name__ == '__main__':
     app.run(debug=True)
