@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm mt-3 mb-5">
+            <div class="card-header bg-dark text-white text-center"><h4>Create Account</h4></div>
+            <div class="card-body p-4">
+                <form method="POST" action="/register">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Register As:</label>
+                        <select name="role_type" class="form-select border-primary" required>
+                            <option value="" disabled selected>Select Role...</option>
+                            <option value="student">Student</option>
+                            <option value="company">Company</option>
+                        </select>
+                    </div>
+                    <hr>
+                    <div class="mb-3">
+                        <label>Username</label>
+                        <input type="text" name="username" class="form-control" required minlength="4">
+                    </div>
+                    <div class="mb-3">
+                        <label>Password</label>
+                        <input type="password" name="password" class="form-control" required minlength="6">
+                    </div>
+                    <hr>
+                    <p class="text-muted small">Fill the section that applies to your role:</p>
+                    
+                    <h6 class="text-primary">For Students:</h6>
+                    <input type="text" name="full_name" class="form-control mb-2" placeholder="Full Name">
+                    <input type="text" name="education" class="form-control mb-3" placeholder="Degree / Course">
+                    
+                    <h6 class="text-success">For Companies:</h6>
+                    <input type="text" name="company_name" class="form-control mb-2" placeholder="Organization Name">
+                    <input type="text" name="industry" class="form-control mb-2" placeholder="Industry Sector">
+                    <input type="email" name="hr_contact" class="form-control mb-3" placeholder="HR Email Address">
+                    
+                    <button type="submit" class="btn btn-dark w-100">Register</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
