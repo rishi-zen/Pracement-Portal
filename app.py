@@ -134,10 +134,9 @@ def dashboard_route():
                                p_drives=pending_drives)
                                
     elif current_user.account_type == 'company':
-        return render_template('company_dashboard.html')
-    else:
-        return render_template('student_dashboard.html')
-
+        # Fetch only the drives posted by this specific company [cite: 88, 464]
+        my_drives = CampusDrive.query.filter_by(company_ref=current_user.company_record.id).all()
+        return render_template('company_dashboard.html', drives=my_drives)
 
 @app.route('/admin/verify_company/<int:comp_id>', methods=['POST'])
 @login_required
@@ -168,6 +167,61 @@ def verify_drive(drive_id):
     
     flash(f"Placement Drive '{drive.role_title}' has been {drive.current_status}.", 'success')
     return redirect(url_for('dashboard_route'))
+# ==========================================
+# Company Functionalities 
+# ==========================================
+from datetime import datetime
 
+@app.route('/company/post_drive', methods=['POST'])
+@login_required
+def post_drive():
+    if current_user.account_type != 'company':
+        return redirect(url_for('dashboard_route'))
+        
+    # Combine skills, experience, and salary to fit within our DB schema [cite: 89]
+    deadline_str = request.form.get('deadline')
+    deadline_date = datetime.strptime(deadline_str, '%Y-%m-%d').date()
+    
+    new_drive = CampusDrive(
+        company_ref=current_user.company_record.id,
+        role_title=request.form.get('job_title'),
+        role_desc=f"{request.form.get('job_desc')} | Salary: {request.form.get('salary')}",
+        requirements=f"Skills: {request.form.get('skills')} | Exp: {request.form.get('experience')}",
+        last_date=deadline_date,
+        current_status='Pending' # Requires Admin Approval [cite: 351-354]
+    )
+    db.session.add(new_drive)
+    db.session.commit()
+    flash('New Job Posting submitted! Awaiting Admin approval.', 'info')
+    return redirect(url_for('dashboard_route'))
+
+@app.route('/company/update_drive/<int:drive_id>', methods=['POST'])
+@login_required
+def update_drive(drive_id):
+    if current_user.account_type != 'company':
+        return redirect(url_for('dashboard_route'))
+        
+    drive = CampusDrive.query.get_or_404(drive_id)
+    # Ensure this company owns the drive
+    if drive.company_ref == current_user.company_record.id:
+        drive.current_status = request.form.get('new_status') # e.g., 'Closed' [cite: 90]
+        db.session.commit()
+        flash(f'Drive status updated to {drive.current_status}.', 'success')
+    return redirect(url_for('dashboard_route'))
+
+@app.route('/company/update_app/<int:app_id>', methods=['POST'])
+@login_required
+def update_application(app_id):
+    if current_user.account_type != 'company':
+        return redirect(url_for('dashboard_route'))
+        
+    application = JobApplication.query.get_or_404(app_id)
+    # Ensure this application belongs to a drive owned by this company
+    if application.drive_details.company_ref == current_user.company_record.id:
+        # Update selection status (Shortlisted / Selected / Rejected) [cite: 92-93, 468-469]
+        application.selection_status = request.form.get('new_status') 
+        db.session.commit()
+        flash('Applicant status updated.', 'success')
+    return redirect(url_for('dashboard_route'))
 if __name__ == '__main__':
     app.run(debug=True)
