@@ -1,8 +1,3 @@
-"""
-Programmatic Database Initialization Script
-Run this file ONCE to create the SQLite database and Admin user.
-"""
-
 from app import app
 from models import db, AppUser
 from werkzeug.security import generate_password_hash
@@ -25,7 +20,7 @@ def initialize_system():
             )
             db.session.add(admin_account)
             db.session.commit()
-            print("✅ Success: Database created and Admin user (admin_iitm) injected.")
+            print(" Success: Database created and Admin user (admin_iitm) injected.")
         else:
             print("⚡ Notice: Database already exists and Admin is present.")
 

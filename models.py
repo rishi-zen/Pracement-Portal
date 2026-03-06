@@ -1,9 +1,3 @@
-"""
-Database Schema for Placement Portal Application
-Author: Rishi Kumar Singh
-Course: MAD-I
-"""
-
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime
@@ -73,7 +67,7 @@ class CampusDrive(db.Model):
     id = db.Column(db.Integer, primary_key=True) 
     company_ref = db.Column(db.Integer, db.ForeignKey('company_profiles.id'), nullable=False)
     
-    # Job specifics required by the prompt
+
     role_title = db.Column(db.String(150), nullable=False)
     role_desc = db.Column(db.Text, nullable=False)
     requirements = db.Column(db.Text, nullable=False)
