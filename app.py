@@ -110,42 +110,43 @@ def logout_route():
 @login_required
 def dashboard_route():
     if current_user.account_type == 'admin':
-        # Admin Stats 
+        # Admin Stats
         t_students = StudentProfile.query.count()
         t_companies = CompanyProfile.query.count()
         t_drives = CampusDrive.query.count()
         t_apps = JobApplication.query.count()
         
-        # Pending Approvals 
+        # Pending Approvals
         pending_comps = CompanyProfile.query.filter_by(admin_verification='Pending').all()
         pending_drives = CampusDrive.query.filter_by(current_status='Pending').all()
         
+        
+        search_query = request.args.get('q', '').strip()
+        s_results = []
+        c_results = []
+        
+        if search_query:
+            if search_query.isdigit(): # Search by ID
+                s_results = StudentProfile.query.filter_by(id=int(search_query)).all()
+                c_results = CompanyProfile.query.filter_by(id=int(search_query)).all()
+            else: # Search by Name
+                s_results = StudentProfile.query.filter(StudentProfile.candidate_name.ilike(f'%{search_query}%')).all()
+                c_results = CompanyProfile.query.filter(CompanyProfile.org_name.ilike(f'%{search_query}%')).all()
+
         return render_template('admin_dashboard.html', 
-                               t_students=t_students, 
-                               t_companies=t_companies, 
-                               t_drives=t_drives, 
-                               t_apps=t_apps,
-                               p_comps=pending_comps, 
-                               p_drives=pending_drives)
+                               t_students=t_students, t_companies=t_companies, 
+                               t_drives=t_drives, t_apps=t_apps,
+                               p_comps=pending_comps, p_drives=pending_drives,
+                               search_query=search_query, s_results=s_results, c_results=c_results)
                                
     elif current_user.account_type == 'company':
-        # Fetch only the drives posted by this specific company 
         my_drives = CampusDrive.query.filter_by(company_ref=current_user.company_record.id).all()
         return render_template('company_dashboard.html', drives=my_drives)
-    elif current_user.account_type == 'student':
-        # Constraint: View only approved placement drives
+    else:
         active_drives = CampusDrive.query.filter_by(current_status='Approved').all()
-        
-        # Fetch the student's complete application history
         my_apps = JobApplication.query.filter_by(student_ref=current_user.student_record.id).all()
-        
-        # Create a list of drive IDs the student already applied to (to hide the Apply button
         applied_drive_ids = [app.drive_ref for app in my_apps]
-        
-        return render_template('student_dashboard.html', 
-                               drives=active_drives, 
-                               applications=my_apps,
-                               applied_ids=applied_drive_ids)
+        return render_template('student_dashboard.html', drives=active_drives, applications=my_apps, applied_ids=applied_drive_ids)
 
 @app.route('/admin/verify_company/<int:comp_id>', methods=['POST'])
 @login_required
@@ -175,6 +176,29 @@ def verify_drive(drive_id):
     db.session.commit()
     
     flash(f"Placement Drive '{drive.role_title}' has been {drive.current_status}.", 'success')
+    return redirect(url_for('dashboard_route'))
+
+@app.route('/admin/manage_user/<int:auth_id>', methods=['POST'])
+@login_required
+def manage_user(auth_id):
+    if current_user.account_type != 'admin':
+        return redirect(url_for('dashboard_route'))
+        
+    user = AppUser.query.get_or_404(auth_id)
+    
+    if user.account_type == 'student':
+        # Safely delete student applications first, then the user
+        JobApplication.query.filter_by(student_ref=user.student_record.id).delete()
+        db.session.delete(user.student_record)
+        db.session.delete(user)
+        flash('Student deleted successfully.', 'success')
+        
+    elif user.account_type == 'company':
+        # Blacklist the company by revoking approval
+        user.company_record.admin_verification = 'Rejected'
+        flash('Company blacklisted (status set to Rejected).', 'warning')
+        
+    db.session.commit()
     return redirect(url_for('dashboard_route'))
 # ==========================================
 # Company Functionalities 
